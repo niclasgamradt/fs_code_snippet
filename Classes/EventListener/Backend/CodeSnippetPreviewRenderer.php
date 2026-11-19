@@ -20,7 +20,7 @@ class CodeSnippetPreviewRenderer
 
     public function __invoke(PageContentPreviewRenderingEvent $event): void
     {
-        if ($event->getRecord()['CType'] !== 'fs_code_snippet') {
+        if ($event->getRecord()->get('CType') !== 'fs_code_snippet') {
             return;
         }
         $this->preProcess($event);
@@ -32,8 +32,14 @@ class CodeSnippetPreviewRenderer
      */
     public function preProcess(PageContentPreviewRenderingEvent $event): void
     {
-        $itemContent = '<strong>' . $this->getProgrammingLanguageLabel($event->getRecord()['programming_language']) . ':</strong><br />' .
-            '<pre><code>' . $this->prepareCodeSnippet($event->getRecord()['bodytext']). '</code></pre>';
+        $record = $event->getRecord();
+        //string cast to to safely handle null values
+        $language =(string)$record->get('programming_language');
+        $code = (string)$record->get('bodytext');
+
+        $itemContent = '<strong>' . $this->getProgrammingLanguageLabel($language) . ':</strong><br />' .
+            '<pre><code>' . $this->prepareCodeSnippet($code). '</code></pre>';
+
         $event->setPreviewContent($itemContent);
     }
 
@@ -55,7 +61,13 @@ class CodeSnippetPreviewRenderer
 
     protected function getProgrammingLanguageLabel(string $value): string
     {
-        foreach ($GLOBALS['TCA']['tt_content']['columns']['programming_language']['config']['items'] as $programmingLanguage) {
+        if ($value === '') {
+            return '';
+        }
+
+        $items = $GLOBALS['TCA']['tt_content']['columns']['programming_language']['config']['items'] ?? [];
+
+        foreach ($items as $programmingLanguage) {
             if ($programmingLanguage['value'] === $value) {
                 return $programmingLanguage['label'];
             }
